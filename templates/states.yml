@@ -1,0 +1,123 @@
+# Career-Ops — Canonical States
+# Source of truth for agentic-job-hunt (writer) and dashboard (reader).
+# Both systems MUST use these exact states.
+#
+# Rule: The status field in applications.md must contain EXACTLY
+# one of these values (case-insensitive). No markdown bold (**),
+# no dates, no extra text. Dates go in the date column.
+#
+# Emoji display:
+# - Pending (no status yet): empty
+# - All other statuses use the emoji defined below
+
+states:
+  - id: evaluated
+    label: Evaluated
+    aliases: [evaluada]
+    description: Offer evaluated with report, pending decision
+    dashboard_group: evaluated
+    emoji: ""
+
+  - id: applied
+    label: Applied
+    aliases: [aplicado, enviada, aplicada, sent]
+    description: Application submitted
+    dashboard_group: applied
+    emoji: "✅"
+
+  - id: responded
+    label: Responded
+    aliases: [respondido]
+    description: Company has responded (not yet interview)
+    dashboard_group: responded
+    emoji: "📬"
+
+  - id: interview
+    label: Interview
+    aliases: [entrevista]
+    description: Active interview process
+    dashboard_group: interview
+    emoji: "🎯"
+
+  - id: offer
+    label: Offer
+    aliases: [oferta]
+    description: Offer received
+    dashboard_group: offer
+    emoji: "💰"
+
+  - id: rejected
+    label: Rejected
+    aliases: [rechazado, rechazada]
+    description: Rejected by company
+    dashboard_group: rejected
+    emoji: "❌"
+
+  - id: discarded
+    label: Discarded
+    aliases: [descartado, descartada, cerrada, cancelada]
+    description: Discarded by candidate or offer closed
+    dashboard_group: discarded
+    emoji: "🚫"
+
+  - id: ignored
+    label: Ignored
+    aliases: [ghosted, no_response, no response]
+    description: Applied, never got a response, retired after the follow-up window
+    dashboard_group: ignored
+    emoji: "👻"
+
+  - id: skip
+    label: SKIP
+    aliases: [no_aplicar, no aplicar, skip, monitor]
+    description: Doesn't fit, don't apply
+    dashboard_group: skip
+    emoji: "⏭️"
+
+# Interview-stage ladder — source of truth for data/outcomes.tsv.
+#
+# `status` above answers "where does this row sit in the tracker". `stage`
+# answers "how far into the loop did it actually get". They are different
+# questions: a row can be ❌ rejected after four stages or ❌ rejected at the CV
+# screen, and only the stage ladder tells those apart.
+#
+# `rank` is ordinal, so the furthest stage reached is a max() over the ladder.
+# Company loops vary, so record both the count of completed stages and the id
+# of the furthest one — the count alone hides that a 2-stage loop at one
+# company is a 5-stage loop at another.
+stages:
+  - id: screen
+    rank: 1
+    label: Recruiter / HR screen
+    aliases: [hr_call, hr_screen, recruiter_screen, phone_screen, video_screen]
+    description: First human conversation, usually talent acquisition
+
+  - id: hiring_manager
+    rank: 2
+    label: Hiring manager
+    aliases: [hm, hm_round, manager_interview]
+    description: Round with the person the role reports to
+
+  - id: technical
+    rank: 3
+    label: Technical / skills interview
+    aliases: [skills_interview, technical_interview, peer_interview]
+    description: Craft round with a PM peer or an engineer
+
+  - id: case_study
+    rank: 4
+    label: Case study / presentation
+    aliases: [take_home, presentation, exercise]
+    description: Prepared work presented back to a panel
+
+  - id: final
+    rank: 5
+    label: Final round / onsite
+    aliases: [onsite, panel, stakeholder_interview, exec_interview]
+    description: Loop of stakeholder, cross-functional or executive rounds
+
+  - id: offer
+    rank: 6
+    label: Offer
+    aliases: [verbal_offer, written_offer]
+    description: Company made an offer

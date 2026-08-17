@@ -1,0 +1,60 @@
+# Personal data (user fills these)
+batch/logs/*
+!batch/logs/.gitkeep
+batch/batch-state.tsv
+batch/batch-input.tsv
+batch/tracker-additions/**/*.tsv
+!batch/tracker-additions/.gitkeep
+jds/*
+!jds/.gitkeep
+
+# User config and customization (never auto-updated)
+.update-dismissed
+.update-lock
+
+# Generated
+.resolved-prompt-*
+node_modules/
+bun.lock
+
+# OS
+.DS_Store
+*.mov
+*.mp4
+
+# Claude Code local
+.claude/settings.local.json
+career-dashboard
+package-lock.json
+
+# Obsidian editor state (this project doubles as a vault)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Python bytecode from .skills scripts
+**/__pycache__/
+
+# Identity: created at setup, never committed to the template
+cv.md
+config/profile.yml
+modes/_profile.md
+portals.yml
+article-digest.md
+
+# Artifacts of a real search. The empty data/ scaffolds ARE tracked (they carry
+# the schema every script depends on); everything generated on top is not.
+reports/*
+!reports/.gitkeep
+output/*
+!output/.gitkeep
+jds/*
+!jds/.gitkeep
+
+# interview-prep ships the method only. Company-specific docs, transcripts and
+# anything naming a real interviewer stay local.
+interview-prep/*
+!interview-prep/seniority-playbook.md
+!interview-prep/story-bank.md
+!interview-prep/interview-feedback-log.md
+!interview-prep/rejected-option-excavation.md
+!interview-prep/voice-drill-briefing.md

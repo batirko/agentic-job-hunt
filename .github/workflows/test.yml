@@ -1,0 +1,23 @@
+name: Tests
+
+on:
+  # This fork commits straight to main, so a PR-only trigger meant the suite
+  # effectively never ran. Run on push too.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.22'
+      - run: npm install
+      - run: node test-all.mjs --quick

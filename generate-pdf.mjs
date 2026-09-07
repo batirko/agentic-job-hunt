@@ -12,7 +12,7 @@
 
 import { chromium } from 'playwright';
 import { resolve, dirname } from 'path';
-import { readFile } from 'fs/promises';
+import { readFile, writeFile, unlink } from 'fs/promises';
 import { mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 
@@ -115,7 +115,7 @@ async function generatePDF() {
   // Resolve font paths relative to agentic-job-hunt/fonts/
   const fontsDir = resolve(__dirname, 'fonts');
   html = html.replace(
-    /url\(['"]?\.\/fonts\//g,
+    /url\(['"]?(?:\.\.\/\.\.\/|\.\/)fonts\//g,
     `url('file://${fontsDir}/`
   );
   // Close any unclosed quotes from the replacement (handles all font formats)
@@ -137,14 +137,33 @@ async function generatePDF() {
   try {
     const page = await browser.newPage();
 
-    // Set content with file base URL for any relative resources
-    await page.setContent(html, {
-      waitUntil: 'networkidle',
-      baseURL: `file://${dirname(inputPath)}/`,
-    });
+    // Render from a real file on disk, not setContent.
+    //
+    // setContent puts the markup in an about:blank document, and Chromium
+    // refuses to load file:// subresources from that origin — so every
+    // @font-face silently failed and each CV fell back to a system font. The
+    // baseURL option does not rescue it either; setContent ignores it.
+    //
+    // The processed HTML is written beside the input so any remaining relative
+    // reference resolves the way the author meant it to.
+    const stagedPath = resolve(dirname(inputPath), `.cv-render-${process.pid}.html`);
+    await writeFile(stagedPath, html, 'utf-8');
+    try {
+      await page.goto(`file://${stagedPath}`, { waitUntil: 'networkidle' });
 
-    // Wait for fonts to load
-    await page.evaluate(() => document.fonts.ready);
+      // Wait for the webfonts, then confirm they actually arrived.
+      await page.evaluate(() => document.fonts.ready);
+      const missing = await page.evaluate(() => {
+        const wanted = new Set();
+        for (const f of document.fonts) wanted.add(f.family.replace(/['"]/g, ''));
+        return [...wanted].filter((fam) => !document.fonts.check(`12px "${fam}"`));
+      });
+      if (missing.length) {
+        console.warn(`⚠️  Webfont did not load, PDF will fall back: ${missing.join(', ')}`);
+      }
+    } finally {
+      await unlink(stagedPath).catch(() => {});
+    }
 
     // Generate PDF
     const pdfBuffer = await page.pdf({
@@ -160,7 +179,6 @@ async function generatePDF() {
     });
 
     // Write PDF
-    const { writeFile } = await import('fs/promises');
     await writeFile(outputPath, pdfBuffer);
 
     // Count pages (approximate from PDF structure)

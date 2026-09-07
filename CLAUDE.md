@@ -58,9 +58,8 @@ AI-powered job search automation built on Claude Code: pipeline tracking, offer 
 | `data/scan-history.tsv`              | Scanner dedup history                                                                                                                               |
 | `portals.yml`                        | Query and company config                                                                                                                            |
 | `templates/cv-template.html`         | HTML template for CVs                                                                                                                               |
-| `templates/cv-template.tex`          | LaTeX/Overleaf template for CVs                                                                                                                     |
+| `templates/cv-template.tex`          | LaTeX/Overleaf template for CVs. Compiled by hand in Overleaf; no local build script                                                                |
 | `generate-pdf.mjs`                   | Playwright: HTML to PDF                                                                                                                             |
-| `generate-latex.mjs`                 | LaTeX CV validator + pdflatex compiler                                                                                                              |
 | `article-digest.md`                  | Compact proof points from portfolio (optional)                                                                                                      |
 | `interview-prep/seniority-playbook.md` | **Required reading before any interview work.** Cross-company reference: probe mechanics, interviewer role map, context lens, objection counters, story-to-probe map, and the canonical six-beat answer (§13) |
 | `interview-prep/interview-feedback-log.md` | Every call graded A-F across seven dimensions, plus the two standing rules for transcripts. The record four rejections were diagnosed from      |

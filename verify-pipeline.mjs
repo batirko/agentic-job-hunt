@@ -95,10 +95,15 @@ for (const line of readFileSync(file, 'utf-8').split('\n')) {
   const date = parts[1];
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue; // Skip non-date rows
   rowNum++;
-  // Detect 3-score format (Fit | Odds | Priority) vs 2-score (Fit | Priority)
-  const col4LooksLikeScore = /^\d+\.?\d*\/5$|-$/.test(parts[4]);
-  const col5LooksLikeScore = /^\d+\.?\d*\/5$/.test(parts[5]);
-  const col6LooksLikeScore = /^\d+\.?\d*\/5$/.test(parts[6]);
+  // Detect 3-score format (Fit | Odds | Priority) vs 2-score (Fit | Priority).
+  // The accepted values must match check 4 below exactly. A row the tracker
+  // never scored carries N/A, and when the detector rejected that, the row fell
+  // through to the legacy layout and its own Odds column got reported as a
+  // broken status.
+  const isScore = s => /^\d+\.?\d*\/5$/.test(s);
+  const col4LooksLikeScore = isScore(parts[4]) || parts[4] === '-' || parts[4] === 'N/A';
+  const col5LooksLikeScore = isScore(parts[5]) || parts[5] === '-' || parts[5] === 'N/A';
+  const col6LooksLikeScore = isScore(parts[6]) || parts[6] === 'N/A' || parts[6] === 'DUP';
   const hasOddsCol = col4LooksLikeScore && col5LooksLikeScore && col6LooksLikeScore;
 
   let fit, odds, score, status, output, report, location, reasoning, url;
@@ -208,17 +213,51 @@ for (const e of entries) {
 if (badScores === 0) ok('All scores valid');
 
 // --- Check 5: Row format ---
+// Every data row must be fenced by pipes and carry exactly as many columns as
+// the table header declares. A row that is short, long, or missing its closing
+// pipe shifts every cell after the defect, so the URL lands in the notes column
+// and the notes land nowhere. Both failures have reached the archive unnoticed.
+const SEPARATOR_ROW = /^\|[\s:|-]+\|?$/;
+
 let badRows = 0;
 for (const file of APPS_FILES) {
-  for (const line of readFileSync(file, 'utf-8').split('\n')) {
-    if (!line.startsWith('|')) continue;
-    if (line.includes('---') || line.includes('Empresa')) continue;
-    const parts = splitRow(line);
-    if (parts.length < 11) {
-      error(`${basename(file)}: row with <11 columns: ${line.substring(0, 80)}...`);
-      badRows++;
+  const lines = readFileSync(file, 'utf-8').split('\n');
+
+  // Column count comes from the header, so adding a column to the schema
+  // does not mean editing this check.
+  let expected = null;
+  for (const line of lines) {
+    if (!line.startsWith('|') || SEPARATOR_ROW.test(line)) continue;
+    const cells = splitRow(line);
+    if (cells.length > 2 && /^(date|fecha|#|num)$/i.test(cells[1])) {
+      expected = cells.length - 2;
+      break;
     }
   }
+  if (expected === null) {
+    warn(`${basename(file)}: no table header found, skipping column-count check`);
+    continue;
+  }
+
+  lines.forEach((line, i) => {
+    if (!line.startsWith('|') || SEPARATOR_ROW.test(line)) return;
+    const cells = splitRow(line);
+    if (/^(date|fecha|#|num)$/i.test(cells[1])) return;  // the header itself
+
+    const where = `${basename(file)}:${i + 1}`;
+    const preview = line.substring(0, 80);
+
+    if (cells[cells.length - 1] !== '') {
+      error(`${where}: row is missing its closing pipe: ${preview}...`);
+      badRows++;
+      return;
+    }
+    const count = cells.length - 2;
+    if (count !== expected) {
+      error(`${where}: row has ${count} columns, expected ${expected}: ${preview}...`);
+      badRows++;
+    }
+  });
 }
 if (badRows === 0) ok('All rows properly formatted');
 

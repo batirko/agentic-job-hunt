@@ -3,10 +3,16 @@
  * cv-lint.mjs — CV rule compliance checker
  *
  * Runs automatically via PostToolUse hook on any Write/Edit to output/ CV files.
- * Can also be run manually: node cv-lint.mjs [file]
+ * Can also be run manually: node cv-lint.mjs <file>
  *
- * Exit code is always 0 (non-blocking). Violations are printed as warnings
- * so the hook surfaces them to Claude without aborting the tool call.
+ * Two modes, because the reader differs:
+ *   hook   — payload arrives as JSON on stdin; the file is at tool_input.file_path.
+ *            Emits pure JSON (hookSpecificOutput.additionalContext) so the model
+ *            reads the warnings, and stays silent when the CV is clean.
+ *   manual — file path as argv[2]; prints for a human.
+ *
+ * Exit code is always 0 (non-blocking). PostToolUse runs after the write has
+ * already happened, so violations are warnings, never a veto.
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -15,14 +21,23 @@ import { resolve } from 'path';
 // ── Resolve target file ───────────────────────────────────────────────────────
 
 let filePath = process.argv[2];
+let hookMode = false;
 
 if (!filePath) {
-  // Called from PostToolUse hook — parse CLAUDE_TOOL_INPUT env var
-  const raw = process.env.CLAUDE_TOOL_INPUT;
-  if (!raw) process.exit(0);
+  // Called from the PostToolUse hook. Claude Code delivers the payload as JSON
+  // on stdin — there is no CLAUDE_TOOL_INPUT environment variable, and reading
+  // one is why this linter sat silent for every edit it was meant to catch.
+  if (process.stdin.isTTY) process.exit(0);
+  let raw;
   try {
-    const input = JSON.parse(raw);
-    filePath = input.file_path;
+    raw = readFileSync(0, 'utf8');
+  } catch {
+    process.exit(0);
+  }
+  if (!raw || !raw.trim()) process.exit(0);
+  try {
+    filePath = JSON.parse(raw)?.tool_input?.file_path;
+    hookMode = true;
   } catch {
     process.exit(0);
   }
@@ -52,6 +67,9 @@ if (!existsSync(abs)) process.exit(0);
 
 const content = readFileSync(abs, 'utf8');
 const isHTML = abs.endsWith('.html');
+// A cover letter is a different document with different rules. It is named for
+// the role it targets, so the CV title rule does not apply to it.
+const isCoverLetter = /cover letter/i.test(abs);
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
 
@@ -104,10 +122,11 @@ if (!isHTML) {
   // Strip date-range en-dashes before checking (e.g. "2021 – 2024", "Nov 2024 – Present")
   const MONTH = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
   const DATE  = `(?:${MONTH}\\s+)?\\d{4}`;
-  const stripped = content.replace(
-    new RegExp(`(${DATE})\\s*[–—]\\s*(${DATE}|Present|present)`, 'g'),
-    '$1-$2'
-  );
+  const stripped = content
+    .replace(new RegExp(`(${DATE})\\s*[–—]\\s*(${DATE}|Present|present)`, 'g'), '$1-$2')
+    // An inline code span quotes a literal string, so a dash inside it is the
+    // thing being quoted rather than the author's punctuation.
+    .replace(/`[^`\n]*`/g, '``');
   if (stripped.match(/[—–]/)) {
     violations.push({
       label: 'DASH_IN_MD',
@@ -118,11 +137,17 @@ if (!isHTML) {
 }
 
 // 6. Wrong job title format (product name appended to title)
-check(
-  'TITLE_WITH_PRODUCT',
+//
+// Skipped for cover letters. A letter's subject line names the role being
+// applied for, which is the correct thing for it to do; the rule is about the
+// title the CV claims for its own author.
+if (!isCoverLetter) {
+  check(
+    'TITLE_WITH_PRODUCT',
   /Senior Product Manager[,:]?\s+(Developer|Platform|AI|Security|Infrastructure|Catalog|IDP)/gi,
-  'Job title includes product name. Keep title as "Senior Product Manager" only; product goes in the italic Product: subtitle.'
-);
+    'Job title includes product name. Keep title as "Senior Product Manager" only; product goes in the italic Product: subtitle.'
+  );
+}
 
 // 7. "Portfolio Management" in skills
 check(
@@ -154,16 +179,20 @@ check(
 
 // 11. Missing Product: subtitle (MD only — check each role block that looks like a job entry)
 if (!isHTML) {
-  const roleBlocks = content.split(/^### /m).slice(1);
+  // Scoped to the employment section. Personal projects use the same heading
+  // shape ("name | status | url") and carry no Product: line by design, so
+  // scanning the whole document reports every side project as a broken job.
+  const experience = content.split(/^## /m).find((sec) => /^(Work )?Experience/i.test(sec)) ?? '';
+  const roleBlocks = experience.split(/^### /m).slice(1);
   roleBlocks.forEach((block) => {
     // Only check blocks that look like job entries: "Company | Role | Dates | Location"
     const firstLine = block.split('\n')[0];
     if (!firstLine.includes('|')) return; // skip non-job blocks (e.g. candidate title)
-    if (!block.match(/^_Product:/m) && !block.match(/^\*Product:/m)) {
+    if (!block.match(/^[_*]{0,2}Product:/m)) {
       const company = firstLine.split('|')[0].trim().slice(0, 40);
       violations.push({
         label: 'MISSING_PRODUCT_SUBTITLE',
-        message: `Role "${company}" is missing an italic Product: subtitle line.`,
+        message: `Role "${company}" is missing its Product: subtitle line.`,
         sample: company,
       });
     }
@@ -192,17 +221,34 @@ if (!isHTML) {
 // ── Output ────────────────────────────────────────────────────────────────────
 
 if (violations.length === 0) {
-  console.log(`cv-lint: ✅ ${filePath} — no violations found`);
+  // Silent in hook mode: a clean CV should not add noise to every edit.
+  if (!hookMode) console.log(`cv-lint: ✅ ${filePath} — no violations found`);
   process.exit(0);
 }
 
-console.log(`\ncv-lint: ⚠️  ${violations.length} violation(s) in ${filePath}\n`);
-violations.forEach(({ label, message, sample }) => {
-  console.log(`  [${label}]`);
-  console.log(`  ${message}`);
-  if (sample) console.log(`  Found: "${sample}"`);
-  console.log();
-});
+const report = [
+  `cv-lint: ${violations.length} violation(s) in ${filePath}`,
+  '',
+  ...violations.flatMap(({ label, message, sample }) => [
+    `  [${label}]`,
+    `  ${message}`,
+    ...(sample ? [`  Found: "${sample}"`] : []),
+    '',
+  ]),
+].join('\n');
+
+if (hookMode) {
+  // Pure JSON, nothing else on stdout — mixed output is read as plain text and
+  // the structured block is lost.
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'PostToolUse',
+      additionalContext: report,
+    },
+  }));
+} else {
+  console.log(`\n${report}`);
+}
 
 // Always exit 0 — violations are warnings, not hard errors
 process.exit(0);

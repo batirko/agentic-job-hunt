@@ -12,8 +12,10 @@
  * - 9-col TSV: num\tdate\tcompany\trole\tstatus\tscore\tpdf\treport\tnotes
  * - Pipe-delimited (markdown table row)
  *
- * Dedup: report number match → company+role fuzzy match
+ * Dedup (match-core.mjs): same company AND (same report number OR same role).
+ * Company has to agree on both paths — report numbers are not unique keys.
  * If duplicate with higher Priority score → update in-place
+ * A TSV that changed nothing is HELD in tracker-additions/, never filed away
  * Validates status against states.yml
  *
  * Run: node agentic-job-hunt/merge-tracker.mjs [--dry-run] [--verify]
@@ -25,6 +27,7 @@ import { fileURLToPath } from 'url';
 import { execFileSync } from 'child_process';
 import { splitRow, escapeCell as e } from './markdown-core.mjs';
 import { resolveTrackerPath, resolveArchivePath, ARCHIVE_BASENAME } from './tracker-core.mjs';
+import { findDuplicate } from './match-core.mjs';
 
 const CAREER_OPS = dirname(fileURLToPath(import.meta.url));
 const APPS_FILE = resolveTrackerPath(CAREER_OPS);
@@ -98,74 +101,6 @@ function validateStatus(status) {
  */
 function normalizeReportLink(report) {
   return (report ?? '').replace(/\]\((?:\.\/)?reports\//g, '](../reports/');
-}
-
-function normalizeCompany(name) {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
-// Tokens that almost every role shares — must NOT count as signal.
-// Includes seniority, work-mode, contract, and common locations.
-const ROLE_STOPWORDS = new Set([
-  // generic role nouns — every row in this tracker is a PM role, so these
-  // carry no signal. Without them a short title like "Senior Product Manager
-  // (YouTrack)" matches any other "Product Manager ..." at the same company
-  // on these two words alone.
-  'product', 'manager', 'managers', 'management',
-  // seniority / level
-  'junior', 'mid', 'middle', 'senior', 'staff', 'principal', 'lead', 'head',
-  'chief', 'associate', 'intern', 'entry', 'level',
-  // contract / mode
-  'remote', 'hybrid', 'onsite', 'contract', 'contractor', 'freelance',
-  'fulltime', 'parttime', 'permanent', 'temporary', 'intern', 'internship',
-  // generic job words
-  'role', 'position', 'opportunity', 'team', 'based',
-  // very common locations (extend in portals.yml later if needed)
-  'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad', 'pune', 'chennai',
-  'london', 'berlin', 'paris', 'madrid', 'barcelona', 'amsterdam', 'dublin',
-  'york', 'francisco', 'seattle', 'boston', 'austin', 'chicago', 'toronto',
-  'tokyo', 'singapore', 'sydney', 'melbourne', 'lisbon', 'warsaw',
-  // regions / countries
-  'europe', 'emea', 'apac', 'latam', 'americas', 'india', 'spain', 'germany',
-  'france', 'italy', 'canada', 'brazil', 'mexico', 'japan',
-  // prepositions leaking through length filter
-  'with', 'from', 'into', 'over', 'this', 'that',
-]);
-
-function roleTokens(s) {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 3 && !ROLE_STOPWORDS.has(w));
-}
-
-function roleFuzzyMatch(a, b) {
-  const wordsA = roleTokens(a);
-  const wordsB = roleTokens(b);
-  if (wordsA.length === 0 || wordsB.length === 0) return false;
-
-  const setB = new Set(wordsB);
-  const overlap = wordsA.filter(w => setB.has(w)).length;
-  if (overlap === 0) return false;
-
-  // Jaccard-style ratio on content tokens. Two roles are "the same" only
-  // when the overlap dominates the smaller side — not when they just share
-  // a location + "engineer".
-  const minLen = Math.min(wordsA.length, wordsB.length);
-  const ratio = overlap / minLen;
-
-  // Normally require two overlapping content tokens. Titles that reduce to a
-  // single distinctive token ("... (YouTrack)") can never reach two, so for
-  // those the one token must match exactly and completely.
-  if (minLen === 1) return ratio === 1;
-
-  return overlap >= 2 && ratio >= 0.6;
-}
-
-function extractReportNum(reportStr) {
-  const m = reportStr.match(/\[(\d+)\]/);
-  return m ? parseInt(m[1]) : null;
 }
 
 function parseScore(s) {
@@ -341,36 +276,31 @@ let updated = 0;
 let skipped = 0;
 const newLines = [];
 
+// Only a TSV that actually changed applications.md may be filed away. Anything
+// else is HELD in place, because a merge that writes nothing and consumes the
+// file anyway loses the evaluation: the report and the CV survive, the tracker
+// row does not, and nothing left behind says so.
+const merged = new Set();
+const held = [];
+const hold = (file, reason) => { held.push({ file, reason }); skipped++; };
+
 for (const file of tsvFiles) {
   const content = readFileSync(join(ADDITIONS_DIR, file), 'utf-8').trim();
   const addition = parseTsvContent(content, file);
-  if (!addition) { skipped++; continue; }
+  if (!addition) { hold(file, 'could not be parsed. Fix the columns and merge again'); continue; }
 
-  // Check for duplicate by:
-  // 1. Exact report number match
-  // 2. Company + role fuzzy match
-  const reportNum = extractReportNum(addition.report);
-  const normCompany = normalizeCompany(addition.company);
-  const findIn = (apps) => {
-    if (reportNum) {
-      const byNum = apps.find(app => extractReportNum(app.report) === reportNum);
-      if (byNum) return byNum;
-    }
-    return apps.find(app =>
-      normalizeCompany(app.company) === normCompany && roleFuzzyMatch(addition.role, app.role)
-    ) || null;
-  };
-
-  const duplicate = findIn(existingApps);
+  // Duplicate check: same company AND (same report number OR same role).
+  // Company agreement is required on both paths — see findDuplicate().
+  const duplicate = findDuplicate(existingApps, addition);
 
   // Archived match: report it and leave both files alone. Reviving a closed row
   // is a judgment call (the company reposted, the score moved, the reason for
   // closing may no longer hold), so it stays a human decision.
   if (!duplicate) {
-    const archived = findIn(archivedApps);
+    const archived = findDuplicate(archivedApps, addition);
     if (archived) {
       console.log(`📦 Archived: ${addition.company} — ${addition.role} (closed as "${archived.status || 'evaluated'}" in ${ARCHIVE_BASENAME}; move the row back by hand to re-open it)`);
-      skipped++;
+      hold(file, `matches a row closed as "${archived.status || 'evaluated'}" in ${ARCHIVE_BASENAME}. Re-open that row by hand, or delete this file`);
       continue;
     }
   }
@@ -391,15 +321,19 @@ for (const file of tsvFiles) {
         }
         appLines[lineIdx] = updatedLine;
         updated++;
+        merged.add(file);
+      } else {
+        hold(file, 'the row it updates vanished from the tracker mid-merge');
       }
     } else {
-      console.log(`⏭️  Skip: ${addition.company} — ${addition.role} (existing ${oldScore} >= new ${newScore})`);
-      skipped++;
+      console.log(`⏭️  Skip: ${addition.company} — ${addition.role} (matches "${duplicate.role}", existing ${oldScore} >= new ${newScore})`);
+      hold(file, `treated as the same role as "${duplicate.role}" (${oldScore}), which scores at least as high. Confirm they are one role, then delete this file`);
     }
   } else {
     const newLine = `| ${addition.date} | ${e(addition.company)} | ${e(addition.role)} | ${addition.fit} | ${addition.odds} | ${addition.score} | ${e(addition.status)} | ${e(addition.output)} | ${e(addition.report)} | ${e(addition.location)} | ${e(addition.notes)} | ${e(addition.url)} |`;
     newLines.push(newLine);
     added++;
+    merged.add(file);
     console.log(`➕ Add: ${addition.company} — ${addition.role} (${addition.fit} / ${addition.odds} / ${addition.score})`);
   }
 }
@@ -414,9 +348,13 @@ if (newLines.length > 0) {
       break;
     }
   }
-  if (insertIdx >= 0) {
-    appLines.splice(insertIdx, 0, ...newLines);
+  if (insertIdx < 0) {
+    // No header means nowhere to put the rows. Writing the file back unchanged
+    // and filing the TSVs away would drop every one of them.
+    console.error(`\n❌ ${APPS_FILE} has no table header — cannot insert ${newLines.length} row(s). Nothing written; all TSVs left in place.`);
+    process.exit(1);
   }
+  appLines.splice(insertIdx, 0, ...newLines);
 }
 
 // Write back
@@ -430,15 +368,23 @@ if (!DRY_RUN) {
     console.warn('⚠️  sort-tracker.mjs failed:', e.message);
   }
 
-  // Move processed files to merged/
-  if (!existsSync(MERGED_DIR)) mkdirSync(MERGED_DIR, { recursive: true });
-  for (const file of tsvFiles) {
-    renameSync(join(ADDITIONS_DIR, file), join(MERGED_DIR, file));
+  // File away ONLY what reached the tracker.
+  if (merged.size > 0) {
+    if (!existsSync(MERGED_DIR)) mkdirSync(MERGED_DIR, { recursive: true });
+    for (const file of tsvFiles) {
+      if (merged.has(file)) renameSync(join(ADDITIONS_DIR, file), join(MERGED_DIR, file));
+    }
+    console.log(`\n✅ Moved ${merged.size} TSVs to merged/`);
   }
-  console.log(`\n✅ Moved ${tsvFiles.length} TSVs to merged/`);
 }
 
-console.log(`\n📊 Summary: +${added} added, 🔄${updated} updated, ⏭️${skipped} skipped`);
+if (held.length > 0) {
+  console.log(`\n⚠️  Held in ${ADDITIONS_DIR.replace(CAREER_OPS + '/', '')}/. Nothing was written for these, so the files stay put:`);
+  for (const { file, reason } of held) console.log(`   • ${file}: ${reason}`);
+  console.log('   Every merge re-reports them. Resolve the row by hand, or delete the file to drop the evaluation.');
+}
+
+console.log(`\n📊 Summary: +${added} added, 🔄${updated} updated, ⏭️${skipped} held`);
 if (DRY_RUN) console.log('(dry-run — no changes written)');
 
 // Optional verify

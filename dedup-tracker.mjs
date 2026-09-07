@@ -90,6 +90,17 @@ const LOCATION_STOPWORDS = new Set([
   'remote', 'global', 'emea', 'apac', 'latam',
 ]);
 
+/**
+ * Deliberately NOT match-core.mjs's roleFuzzyMatch.
+ *
+ * That one answers "is this incoming evaluation the role we already track?",
+ * and errs toward keeping rows apart because a false match there discards an
+ * evaluation. This one answers "did the same tracker row get written twice?"
+ * and then DELETES a row, so it is tuned separately: at Acronis and
+ * Teamwork.com the same role was posted twice months apart under different
+ * titles, and each posting has its own report, score and outcome. The shared
+ * matcher calls those one role. Merging them here would destroy the record.
+ */
 function roleMatch(a, b) {
   const filterStopwords = (words) =>
     words.filter(w => !ROLE_STOPWORDS.has(w) && !LOCATION_STOPWORDS.has(w));

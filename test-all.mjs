@@ -12,7 +12,8 @@
  */
 
 import { execSync, execFileSync } from 'child_process';
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdtempSync, mkdirSync, cpSync, rmSync, symlinkSync } from 'fs';
+import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 
@@ -279,6 +280,163 @@ if (!QUICK) {
   }
 } else {
   console.log('\n4. Dashboard build (skipped --quick)');
+}
+
+// ── 3c. TRACKER MERGE MATCHING ──────────────────────────────────
+
+// merge-tracker.mjs decides whether an incoming evaluation opens a new tracker
+// row or resolves to one already there. A false match DISCARDS the evaluation:
+// the report and the CV survive, the row never appears, and the only trace is
+// one line of console output. A real evaluation was lost that way.
+console.log('\n3c. Tracker merge matching');
+
+try {
+  const { findDuplicate, roleFuzzyMatch } = await import(pathToFileURL(join(ROOT, 'match-core.mjs')).href);
+
+  const row = (company, role, report) => ({ company, role, report: `[${report}](../reports/x.md)` });
+  const tsv = (company, role, report) => ({ company, role, report: `[${report}](../reports/x.md)` });
+
+  // 1. Report numbers are NOT unique keys (CLAUDE.md §"Pipeline Integrity").
+  //    Concurrent sessions hand the same number to different companies, and
+  //    matching on the number alone resolved a Northwind addition to a
+  //    brickworks row and dropped it.
+  const numberCollision = findDuplicate(
+    [row('brickworks', 'Team Lead, Commerce Platform', 319)],
+    tsv('Northwind', 'Product Manager - Infrastructure Monitoring', 319),
+  );
+  if (numberCollision === null) {
+    pass('A shared report number across two companies is not a duplicate');
+  } else {
+    fail(`Report number 319 matched across companies → ${numberCollision.company}`);
+  }
+
+  // 2. Same company, same report number: this is the re-evaluation path, and
+  //    it has to keep resolving or every re-eval opens a second row.
+  const sameCompanyNumber = findDuplicate(
+    [row('Northwind', 'AI Senior Product Manager', 318)],
+    tsv('Northwind', 'AI Senior PM', 318),
+  );
+  if (sameCompanyNumber) {
+    pass('Same company + same report number still resolves to the existing row');
+  } else {
+    fail('Re-evaluation of the same report no longer finds its row');
+  }
+
+  // 3. One company, several concurrent openings. One employer in this tracker had five product
+  //    roles live on 2026-08-25 sharing the whole title stem, so the domain
+  //    qualifier is the only thing separating them.
+  const distinct = [
+    ['Product Manager - Infrastructure Monitoring', 'AI Senior Product Manager'],
+    ['Product Manager - Infrastructure Monitoring', 'Product Manager - Cybersecurity & AI'],
+    // Shared prefix, opposed differentiator — Zendesk, two real openings.
+    ['Senior Product Manager, AI Agents (Config & Personalization)', 'Senior Product Manager, AI Agents Testing'],
+    // Same shape, one word apart — Jumbo Supermarkten.
+    ['Senior Product Owner AI Platform', 'Senior Product Owner Data Platform'],
+    // A lone qualifier must not swallow a specific one — SIXT, three AI roles.
+    ['AI Product Manager (m/f/d)', '(Senior) PO Agentic AI B2B'],
+  ];
+  const wronglyMerged = distinct.filter(([a, b]) => roleFuzzyMatch(a, b));
+  if (wronglyMerged.length === 0) {
+    pass(`${distinct.length} concurrent-opening title pairs stay distinct`);
+  } else {
+    fail(`Distinct roles treated as one: ${wronglyMerged.map(p => p.join(' / ')).join('; ')}`);
+  }
+
+  // 4. The other direction. The tracker abbreviates, the posting spells out.
+  //    Under-matching duplicates rows instead of losing them, but a title that
+  //    reduces to nothing distinguishing used to not even match ITSELF.
+  const same = [
+    ['Senior PM, AI', 'Senior Product Manager - AI'],
+    ['Senior Product Manager - AI', 'Senior AI Product Manager'],
+    ['AI Senior Product Manager', 'AI Senior Product Manager'],
+    ['Senior Product Manager', 'Product Manager, Senior'],
+    ['Senior Product Manager (YouTrack)', 'Product Manager, YouTrack'],
+  ];
+  const wronglySplit = same.filter(([a, b]) => !roleFuzzyMatch(a, b));
+  if (wronglySplit.length === 0) {
+    pass(`${same.length} rewritten-title pairs still resolve to one role`);
+  } else {
+    fail(`Same role treated as new: ${wronglySplit.map(p => p.join(' / ')).join('; ')}`);
+  }
+} catch (e) {
+  fail(`Merge matching tests crashed: ${e.message}`);
+}
+
+// ── 3d. MERGE KEEPS WHAT IT DID NOT WRITE ───────────────────────
+
+// A merge that writes nothing and files the TSV away anyway loses the whole
+// evaluation. Every TSV that did not reach applications.md must still be
+// sitting in batch/tracker-additions/ when the run ends.
+console.log('\n3d. Merge holds unwritten TSVs');
+
+let sandbox = null;
+try {
+  sandbox = mkdtempSync(join(tmpdir(), 'career-ops-merge-'));
+  for (const f of readdirSync(ROOT).filter(f => f.endsWith('.mjs'))) {
+    cpSync(join(ROOT, f), join(sandbox, f));
+  }
+  cpSync(join(ROOT, 'templates'), join(sandbox, 'templates'), { recursive: true });
+  // merge-tracker.mjs shells out to sort-tracker.mjs, which imports js-yaml.
+  // Without this the sort fails and buries the result under a stack trace.
+  if (existsSync(join(ROOT, 'node_modules'))) {
+    symlinkSync(join(ROOT, 'node_modules'), join(sandbox, 'node_modules'), 'dir');
+  }
+  mkdirSync(join(sandbox, 'data'), { recursive: true });
+  mkdirSync(join(sandbox, 'batch/tracker-additions'), { recursive: true });
+
+  const header = [
+    '| Date | Company | Role | Fit | Odds | Priority | Status | Output | Report | Location | Reasoning | URL |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+  ];
+  writeFileSync(join(sandbox, 'data/applications.md'), [
+    ...header,
+    '| 2026-08-25 | Northwind | AI Senior Product Manager | 4.4/5 | 3.5/5 | 4.1/5 |  | - | [318](../reports/318-northwind-2026-08-25.md) | Ramat Gan, Israel | x | https://example.com/a |',
+  ].join('\n'));
+  writeFileSync(join(sandbox, 'data/applications-archive.md'), header.join('\n'));
+
+  const cols = (o) => [
+    '400', '2026-08-25', 'Northwind', 'AI Senior Product Manager',
+    '4.0/5', '3.0/5', o.priority, '', '-',
+    '[400](../reports/400-northwind-2026-08-25.md)', 'Ramat Gan, Israel', 'note', 'https://example.com/b',
+  ].join('\t');
+  // Scores at or below the row it matches, so the merge writes nothing.
+  writeFileSync(join(sandbox, 'batch/tracker-additions/400-northwind.tsv'), cols({ priority: '3.4/5' }));
+  // Malformed: too few columns to parse at all.
+  writeFileSync(join(sandbox, 'batch/tracker-additions/401-broken.tsv'), 'nope\tnot\tenough');
+
+  // Pipe stderr too: the fixture deliberately includes a malformed TSV, and its
+  // warning is expected output, not a failure to show the reader.
+  const out = run('node', [join(sandbox, 'merge-tracker.mjs')], { cwd: sandbox, stdio: ['ignore', 'pipe', 'pipe'] });
+  const pending = existsSync(join(sandbox, 'batch/tracker-additions'))
+    ? readdirSync(join(sandbox, 'batch/tracker-additions')).filter(f => f.endsWith('.tsv'))
+    : [];
+  const filed = existsSync(join(sandbox, 'batch/tracker-additions/merged'))
+    ? readdirSync(join(sandbox, 'batch/tracker-additions/merged')).filter(f => f.endsWith('.tsv'))
+    : [];
+
+  if (out === null) {
+    fail('merge-tracker.mjs crashed on the held-TSV fixture');
+  } else if (pending.includes('400-northwind.tsv') && !filed.includes('400-northwind.tsv')) {
+    pass('A skipped addition stays in tracker-additions/ instead of moving to merged/');
+  } else {
+    fail(`Skipped addition was consumed (pending: ${pending.join(',') || 'none'}; merged: ${filed.join(',') || 'none'})`);
+  }
+
+  if (pending.includes('401-broken.tsv') && !filed.includes('401-broken.tsv')) {
+    pass('A malformed TSV is held rather than filed away unparsed');
+  } else {
+    fail(`Malformed TSV was consumed (pending: ${pending.join(',') || 'none'})`);
+  }
+
+  if (out && out.includes('Held in')) {
+    pass('The run names every held TSV and why');
+  } else {
+    fail('Held TSVs are not reported at the end of the run');
+  }
+} catch (e) {
+  fail(`Merge hold tests crashed: ${e.message}`);
+} finally {
+  if (sandbox) rmSync(sandbox, { recursive: true, force: true });
 }
 
 // ── 5. DATA CONTRACT ────────────────────────────────────────────

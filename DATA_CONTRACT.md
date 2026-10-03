@@ -48,8 +48,8 @@ These files contain system logic, scripts, templates, and instructions that impr
 | `modes/training.md` | Training evaluation instructions |
 | `modes/patterns.md` | Pattern analysis instructions |
 | `modes/followup.md` | Follow-up cadence instructions |
-| `CLAUDE.md` | Agent instructions |
-| `AGENTS.md` | Codex instructions |
+| `AGENTS.md` | Agent instructions (all harnesses) |
+| `CLAUDE.md` | Pointer to `AGENTS.md` for Claude Code |
 | `*.mjs` | Utility scripts |
 | `batch/batch-prompt.md` | Batch worker prompt |
 | `batch/batch-runner.sh` | Batch orchestrator |

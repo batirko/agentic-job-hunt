@@ -1,6 +1,6 @@
 # Codex Setup
 
-Career-Ops supports Codex through the root `AGENTS.md` file.
+Career-Ops supports Codex through the root `AGENTS.md` file, the same file every other harness reads.
 
 If your Codex client reads project instructions automatically, `AGENTS.md`
 is enough for routing and behavior. Codex should reuse the same checked-in

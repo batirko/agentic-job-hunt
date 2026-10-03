@@ -4,7 +4,7 @@
 ## Working Preferences (MANDATORY)
 
 ### Always fetch the JD, never ask for a paste
-When a job URL is available anywhere -- the tracker, the inbox, the triage table, or the message itself -- fetch it directly. Do not ask the user to paste the description. Use the browser tool ladder in `CLAUDE.md`; only ask for the text if every fetch path fails.
+When a job URL is available anywhere -- the tracker, the inbox, the triage table, or the message itself -- fetch it directly. Do not ask the user to paste the description. Use the browser tool ladder in `AGENTS.md`; only ask for the text if every fetch path fails.
 
 ## Document Style & ATS Standards
 
@@ -433,9 +433,9 @@ can no longer answer follow-up questions about it.
 
 ## Tracker Management (MANDATORY)
 
-### Mechanics live in CLAUDE.md
+### Mechanics live in AGENTS.md
 The two-file split, the 12-column schema, the status emojis, the sort order and
-the merge/archive/retire scripts are all specified in `CLAUDE.md`. Do not
+the merge/archive/retire scripts are all specified in `AGENTS.md`. Do not
 restate them here — a second copy drifts, and the copy that used to live in this
 file had gone stale against `sort-tracker.mjs`. This section covers judgment
 only: which roles get effort, and how they are scored.
@@ -501,7 +501,7 @@ Rules:
 - Reference prior offer/range negotiations when setting expectations for similar roles at the same company
 
 ### Status and sort order
-See the Status Emojis and Sort Order sections of `CLAUDE.md`, and
+See the Status Emojis and Sort Order sections of `AGENTS.md`, and
 `templates/states.yml`. Emoji only, never the word. Re-sort with
 `node sort-tracker.mjs` after every change, and never hand-edit `✅` to `👻` —
 that is what `node retire-stale.mjs` is for.

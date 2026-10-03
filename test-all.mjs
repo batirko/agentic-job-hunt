@@ -120,7 +120,7 @@ try {
 
 // ── 3b. TRACKER SORT ORDER ──────────────────────────────────────
 
-// The sort rules are a product decision documented in CLAUDE.md §"Sort Order",
+// The sort rules are a product decision documented in AGENTS.md §"Sort Order",
 // and nothing else enforces them: a regression here silently reorders the
 // user's tracker instead of failing loudly.
 console.log('\n3b. Tracker sort order');
@@ -296,7 +296,7 @@ try {
   const row = (company, role, report) => ({ company, role, report: `[${report}](../reports/x.md)` });
   const tsv = (company, role, report) => ({ company, role, report: `[${report}](../reports/x.md)` });
 
-  // 1. Report numbers are NOT unique keys (CLAUDE.md §"Pipeline Integrity").
+  // 1. Report numbers are NOT unique keys (AGENTS.md §"Pipeline Integrity").
   //    Concurrent sessions hand the same number to different companies, and
   //    matching on the number alone resolved a Northwind addition to a
   //    brickworks row and dropped it.
@@ -445,7 +445,7 @@ console.log('\n5. Data contract validation');
 
 // Check system files exist
 const systemFiles = [
-  'CLAUDE.md', 'VERSION', 'DATA_CONTRACT.md',
+  'AGENTS.md', 'CLAUDE.md', 'VERSION', 'DATA_CONTRACT.md',
   'modes/_shared.md', 'modes/_profile.template.md',
   'modes/oferta.md', 'modes/pdf.md', 'modes/scan.md',
   'templates/states.yml', 'templates/cv-template.html',
@@ -494,7 +494,7 @@ const leakPatterns = [
 const scanExtensions = ['md', 'yml', 'html', 'mjs', 'sh', 'go', 'json'];
 const allowedFiles = [
   // Attribution to both authors is legitimate and required by the licence.
-  'README.md', 'LICENSE', 'CLAUDE.md', 'package.json', 'test-all.mjs',
+  'README.md', 'LICENSE', 'AGENTS.md', 'CLAUDE.md', 'package.json', 'test-all.mjs',
 ];
 
 // Build pathspec for git grep — only scan tracked files matching these
@@ -536,7 +536,7 @@ console.log('\n7. Absolute path check');
 // is the wrong trade. The check exists to keep hardcoded paths out of scripts,
 // modes and config.
 const absPathResult = run(
-  `git grep -n "/Users/" -- '*.mjs' '*.sh' '*.md' '*.go' '*.yml' 2>/dev/null | grep -v README.md | grep -v LICENSE | grep -v CLAUDE.md | grep -v test-all.mjs | grep -v '^reports/' | grep -v '^output/' | grep -v '^interview-prep/'`
+  `git grep -n "/Users/" -- '*.mjs' '*.sh' '*.md' '*.go' '*.yml' 2>/dev/null | grep -v README.md | grep -v LICENSE | grep -v AGENTS.md | grep -v CLAUDE.md | grep -v test-all.mjs | grep -v '^reports/' | grep -v '^output/' | grep -v '^interview-prep/'`
 );
 if (!absPathResult) {
   pass('No absolute paths in code files');
@@ -572,11 +572,11 @@ if (shared.includes('_profile.md')) {
   fail('_shared.md does NOT reference _profile.md');
 }
 
-// ── 9. CLAUDE.md INTEGRITY ──────────────────────────────────────
+// ── 9. AGENTS.md INTEGRITY ──────────────────────────────────────
 
-console.log('\n9. CLAUDE.md integrity');
+console.log('\n9. AGENTS.md integrity');
 
-const claude = readFile('CLAUDE.md');
+const claude = readFile('AGENTS.md');
 // Sections this fork actually relies on. 'Update Check' went with
 // update-system.mjs, 'Canonical States' was renamed 'Status Emojis', and the
 // first-run wizard moved to docs/SETUP.md — it was 98 lines of always-loaded
@@ -589,9 +589,9 @@ const requiredSections = [
 
 for (const section of requiredSections) {
   if (claude.includes(section)) {
-    pass(`CLAUDE.md has section: ${section}`);
+    pass(`AGENTS.md has section: ${section}`);
   } else {
-    fail(`CLAUDE.md missing section: ${section}`);
+    fail(`AGENTS.md missing section: ${section}`);
   }
 }
 
@@ -612,7 +612,7 @@ const STATUS_CONSUMERS = [
   'normalize-statuses.mjs',
   'dashboard/internal/data/career.go',
   'dashboard/internal/ui/screens/pipeline.go',
-  'CLAUDE.md',
+  'AGENTS.md',
 ];
 
 if (fileExists('templates/states.yml')) {

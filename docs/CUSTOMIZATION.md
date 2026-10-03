@@ -94,7 +94,7 @@ everything else carries its own copy. If you add a state, update all of these:
 11. `dashboard/internal/ui/screens/pipeline.go` — `statusOptions`, `statusGroupOrder`, `statusColorMap`, `statusLabel`
 
 **Docs**
-12. `CLAUDE.md` — §"Status Emojis" table and §"Sort Order"
+12. `AGENTS.md` — §"Status Emojis" table and §"Sort Order"
 13. `data/applications.md` — the preamble legend and sort-order line
 14. `modes/tracker.md`, `modes/patterns.md`, `modes/followup.md`, `modes/_profile.md`
 

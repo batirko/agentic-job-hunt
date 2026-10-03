@@ -69,7 +69,7 @@ Start from Fit, then apply penalties that affect hiring probability:
 | 4.5+ | Apply immediately |
 | 4.0–4.4 | Worth applying |
 | 3.5–3.9 | Only with specific reason |
-| < 3.5 | Skip (see Ethical Use in CLAUDE.md) |
+| < 3.5 | Skip (see Ethical Use in AGENTS.md) |
 
 ## Posting Legitimacy (Block G)
 
@@ -156,8 +156,8 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 |------|-----|
 | WebSearch | Comp research, trends, company culture, LinkedIn contacts, fallback for JDs |
 | WebFetch | Fallback for extracting JDs from static pages |
-| Built-in Claude browser (`mcp__Claude_Browser__*`) | **Preferred** for verifying offers + extracting JDs: `navigate` (in a `tabs_create` tab) + `get_page_text`/`read_page`. Renders LinkedIn public pages without login. See CLAUDE.md → "Offer Verification -- MANDATORY". |
-| chrome-devtools MCP (`mcp__chrome-devtools__*`) | Second-choice browser: `navigate_page` + `take_snapshot`. **NEVER run 2+ browser-driving agents in parallel** (single shared browser). |
+| Real browser tool (Claude Code: `mcp__Claude_Browser__*`) | **Preferred** for verifying offers + extracting JDs: navigate, then read page text or the accessibility tree. Renders LinkedIn public pages without login. See AGENTS.md → "Offer Verification -- MANDATORY". |
+| Second-choice browser (`mcp__chrome-devtools__*` or Playwright) | `navigate_page` + `take_snapshot`. **NEVER run 2+ browser-driving agents in parallel** (single shared browser). |
 | Read | cv.md, _profile.md, article-digest.md, cv-template.html |
 | Write | Temporary HTML for PDF, applications.md, reports .md |
 | Edit | Update tracker |

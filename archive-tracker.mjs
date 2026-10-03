@@ -70,7 +70,7 @@ const ARCHIVE_HEADER = (tableHeader, tableSeparator) => `# Applications Archive 
 >
 > - **Live queue:** \`data/applications.md\` — unapplied, live conversations, sent-and-waiting
 > - **This file:** every row that can no longer change — \`⏭️\` skip, \`❌\` rejected, \`🚫\` discarded, \`👻\` ignored
-> - **Same 12 columns, same rules.** \`CLAUDE.md\` → §"Pipeline Integrity", §"Status Emojis", §"Sort Order"
+> - **Same 12 columns, same rules.** \`AGENTS.md\` → §"Pipeline Integrity", §"Status Emojis", §"Sort Order"
 > - **Both files are read together** by \`analyze-patterns.mjs\`, \`analyze-scoring.mjs\` and \`verify-pipeline.mjs\`, and deduped against together by the scanners and \`triage.mjs\`. Archiving a row hides it from the queue; it never hides it from the analysis.
 > - **Moving rows here:** \`node archive-tracker.mjs\` (dry run) → \`--apply\`. Never cut and paste by hand
 > - **Re-opening a row:** move the line back to \`data/applications.md\` by hand and set its status. \`merge-tracker.mjs\` will not do it for you — it reports the archived match and stops, because reviving a closed row is a judgment call

@@ -147,7 +147,7 @@ export function extractReportNum(reportStr) {
  * The tracker row an incoming addition belongs to, or null to open a new one.
  *
  * Company agreement is required on BOTH paths. Report numbers are not unique
- * keys (CLAUDE.md §"Pipeline Integrity"): concurrent sessions have handed the
+ * keys (AGENTS.md §"Pipeline Integrity"): concurrent sessions have handed the
  * same number to different companies, and matching on the number alone let an
  * addition resolve to an unrelated employer's row, losing the evaluation.
  */

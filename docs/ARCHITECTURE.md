@@ -4,8 +4,8 @@
 
 ```
                     ┌─────────────────────────────────┐
-                    │         Claude Code Agent        │
-                    │   (reads CLAUDE.md + modes/*.md) │
+                    │        Coding agent (any)        │
+                    │   (reads AGENTS.md + modes/*.md) │
                     └──────────┬──────────────────────┘
                                │
             ┌──────────────────┼──────────────────────┐

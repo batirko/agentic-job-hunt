@@ -7,7 +7,7 @@ Processes job offer URLs accumulated in `data/pipeline.md`. The user adds URLs a
 1. **Read** `data/pipeline.md` → find `- [ ]` items in the "Pending" section.
 2. **For each pending URL**:
    a. Calculate the next sequential `REPORT_NUM` (read `reports/`, take the highest number + 1).
-   b. **Extract JD** using the built-in Claude browser (`mcp__Claude_Browser__*`) → chrome-devtools MCP → WebFetch → WebSearch. See CLAUDE.md → "Offer Verification -- MANDATORY".
+   b. **Extract JD** using a real browser tool → WebFetch → WebSearch. See AGENTS.md → "Offer Verification -- MANDATORY".
    c. If the URL is not accessible → mark as `- [!]` with a note and continue.
    d. **Run full auto-pipeline**: A-F Evaluation → Report .md → PDF (if score >= 3.0) → Tracker.
    e. **Move from "Pending" to "Processed"**: `- [x] #NNN | URL | Company | Role | Score/5 | PDF ✅/❌`.
@@ -33,9 +33,9 @@ Processes job offer URLs accumulated in `data/pipeline.md`. The user adds URLs a
 
 ## Intelligent JD Detection from URL
 
-1. **Built-in Claude browser (preferred):** `mcp__Claude_Browser__navigate` (in a `tabs_create` tab) + `get_page_text`/`read_page`. Works with SPAs. See CLAUDE.md → "Offer Verification -- MANDATORY" for the full tool ladder.
-2. **chrome-devtools MCP (second):** `mcp__chrome-devtools__navigate_page` + `take_snapshot`.
-3. **WebFetch (fallback):** For static pages or when both browsers are unavailable.
+1. **Real browser tool (preferred):** navigate to the URL, then read the page text or accessibility tree. Works with SPAs. In Claude Code, use `mcp__Claude_Browser__navigate` in a `tabs_create` tab plus `get_page_text`. See AGENTS.md → "Offer Verification -- MANDATORY" for the full tool ladder.
+2. **Second-choice browser:** a Chrome DevTools MCP server (`navigate_page` + `take_snapshot`) or Playwright.
+3. **WebFetch (fallback):** For static pages or when no browser tool is available.
 4. **WebSearch (last resort):** Search secondary portals indexing the JD.
 
 **Special cases:**

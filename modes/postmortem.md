@@ -32,7 +32,7 @@ Add to the appropriate file:
 | CV content/format | `modes/_profile.md` (under CV Rules) |
 | Cover letter style | `modes/_profile.md` (under Cover Letter Rules) |
 | Pipeline/tool behavior | `modes/_shared.md` (under Tools or PDF Pipeline) |
-| New command | `.claude/skills/job-hunt/SKILL.md` |
+| New command | `modes/_router.md` |
 
 ### 4. Pattern Detection
 

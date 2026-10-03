@@ -84,11 +84,12 @@ AI-powered job search automation built on Claude Code: pipeline tracking, offer 
 | `liveness-core.mjs`                  | Shared liveness logic (expired signals win over generic Apply text)                                                                                 |
 | `reports/`                           | Evaluation reports (format: `{###}-{company-slug}-{YYYY-MM-DD}.md`). Blocks A-F + G (Posting Legitimacy). Header includes `**Legitimacy:** {tier}`. |
 
-### Mode routing without slash commands
+### Mode routing
 
-In Claude Code, `.claude/skills/job-hunt/SKILL.md` routes `/job-hunt {mode}`. Other
-harnesses have no equivalent, so route by hand: read `modes/_shared.md` plus the
-mode file named in the Skill Modes table below. `docs/CODEX.md` has the full map.
+`modes/_router.md` is the one routing table for every harness. It maps a request to
+a mode and says which files to load. Claude Code reaches it through
+`.claude/skills/job-hunt/SKILL.md` (`/job-hunt {mode}`). Other harnesses read it
+directly. `docs/CODEX.md` has a Codex-oriented summary.
 
 ### Personalization
 

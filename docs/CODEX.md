@@ -29,6 +29,8 @@ npx playwright install chromium
 
 ## Routing Map
 
+The full table is `modes/_router.md`. This is the Codex-oriented summary.
+
 | User intent | Files Codex should read |
 |-------------|-------------------------|
 | Raw JD text or job URL | `modes/_shared.md` + `modes/auto-pipeline.md` |

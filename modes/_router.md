@@ -92,4 +92,12 @@ the playbook contained.
 ### Modes delegated to a subagent:
 For `scan`, `apply` (with a browser tool), and `pipeline` (3+ URLs): if the harness can spawn subagents, run the mode in one. Inject the content of `modes/_shared.md` and `modes/{mode}.md` into the subagent prompt, plus the invocation-specific data. In Claude Code, use the `Agent` tool with `subagent_type="general-purpose"` and the description `agentic-job-hunt {mode}`. If the harness has no subagents, run the mode inline.
 
+Set the subagent's model explicitly where the harness allows it, because a subagent otherwise inherits the session's model, which is often a larger one than the work needs:
+
+| Mode | Model (Claude Code) | Why |
+|------|---------------------|-----|
+| `scan` | `sonnet` | Instrumental: runs the scanners and filters titles |
+| `pipeline` | `opus` | Judgement: evaluates and scores offers |
+| `apply` | `opus` | Judgement: drafts answers a recruiter reads |
+
 Execute the instructions from the loaded mode file.

@@ -1,6 +1,6 @@
 # Codex Setup
 
-Career-Ops supports Codex through the root `AGENTS.md` file, the same file every other harness reads.
+This project supports Codex through the root `AGENTS.md` file, the same file every other harness reads.
 
 If your Codex client reads project instructions automatically, `AGENTS.md`
 is enough for routing and behavior. Codex should reuse the same checked-in
@@ -23,9 +23,9 @@ npx playwright install chromium
 
 ## Recommended Starting Prompts
 
-- `Evaluate this job URL with Career-Ops and run the full pipeline.`
+- `Evaluate this job URL with agentic-job-hunt and run the full pipeline.`
 - `Scan my configured portals for new roles that match my profile.`
-- `Generate the tailored ATS PDF for this role using Career-Ops.`
+- `Generate the tailored ATS PDF for this role using agentic-job-hunt.`
 
 ## Routing Map
 
@@ -46,7 +46,7 @@ The full table is `modes/_router.md`. This is the Codex-oriented summary.
 | Project evaluation | `modes/project.md` |
 
 The key point: Codex support is additive. It should route into the existing
-Career-Ops modes and scripts rather than introducing a parallel automation
+agentic-job-hunt modes and scripts rather than introducing a parallel automation
 layer.
 
 ## Behavioral Rules

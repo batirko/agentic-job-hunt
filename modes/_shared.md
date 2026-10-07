@@ -1,11 +1,9 @@
 # System Context -- agentic-job-hunt
 
 <!-- ============================================================
-     THIS FILE IS AUTO-UPDATABLE. Don't put personal data here.
-     
-     Your customizations go in modes/_profile.md (never auto-updated).
-     This file contains system rules, scoring logic, and tool config
-     that improve with each agentic-job-hunt release.
+     System file: an upstream pull replaces it. Don't put personal
+     data here. Your customizations go in modes/_profile.md, which
+     upstream never touches. See DATA_CONTRACT.md.
      ============================================================ -->
 
 ## Sources of Truth
@@ -64,12 +62,7 @@ Start from Fit, then apply penalties that affect hiring probability:
 
 **Priority = Fit × 0.40 + Odds × 0.30 + Opportunity × 0.30**
 
-| Priority | Interpretation |
-|----------|---------------|
-| 4.5+ | Apply immediately |
-| 4.0–4.4 | Worth applying |
-| 3.5–3.9 | Only with specific reason |
-| < 3.5 | Skip (see Ethical Use in AGENTS.md) |
+What a priority score means for the apply decision is set by the effort-lane table in `modes/_profile.md`: which bands get full effort, which get light effort, and where the apply gate sits. Read it there; don't restate the thresholds here.
 
 ## Posting Legitimacy (Block G)
 
@@ -140,14 +133,13 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 7. Be direct and actionable -- no fluff
 8. Native tech English for generated text. Short sentences, action verbs, no passive voice.
 8b. Case study URLs in PDF Professional Summary (recruiter may only read this).
-9. **Tracker additions as TSV** -- NEVER edit applications.md directly. New rows always go to the live tracker; closed rows live in `data/applications-archive.md` and move there via `node archive-tracker.mjs`, never by hand. Write TSV in `batch/tracker-additions/`:
+9. **Tracker additions as TSV** -- never add a row to applications.md by hand. Editing an existing row's status or notes directly is fine. New rows always go to the live tracker; closed rows live in `data/applications-archive.md` and move there via `node archive-tracker.mjs`, never by hand. Write TSV in `batch/tracker-additions/`:
     - Format: `num\tdate\tcompany\trole\tfit\todds\tpriority\tstatus\toutput\treport\tlocation\treasoning\turl`
     - Columns: num | date | company | role | **fit** (X.X/5) | **odds** (X.X/5) | **priority** (X.X/5) | status | output | report | location | reasoning | url
     - **NO header row** — start directly with the data row
     - Report link format: `[###](../reports/###-{slug}-{date}.md)` (include closing parenthesis)
-    - After writing, run: `node merge-tracker.mjs [--sort]`
-    - If sorting needed: `node merge-tracker.mjs --sort`
-    - **After updating status** (e.g., marking Applied): ALWAYS run `node merge-tracker.mjs --sort` to re-sort the table
+    - After writing, run `node merge-tracker.mjs`. It re-sorts the tracker after every merge.
+    - After updating a status by hand (for example, marking Applied), run `node sort-tracker.mjs`.
 10. **Include `**URL:**` in every report header.**
 
 ### Tools
@@ -156,11 +148,11 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 |------|-----|
 | WebSearch | Comp research, trends, company culture, LinkedIn contacts, fallback for JDs |
 | WebFetch | Fallback for extracting JDs from static pages |
-| Real browser tool (Claude Code: `mcp__Claude_Browser__*`) | **Preferred** for verifying offers + extracting JDs: navigate, then read page text or the accessibility tree. Renders LinkedIn public pages without login. See AGENTS.md → "Offer Verification -- MANDATORY". |
+| Real browser tool (Claude Code: `mcp__Claude_Browser__*`) | **Preferred** for verifying offers + extracting JDs: navigate, then read page text or the accessibility tree. Renders LinkedIn public pages without login. See AGENTS.md → "Offer Verification". |
 | Second-choice browser (`mcp__chrome-devtools__*` or Playwright) | `navigate_page` + `take_snapshot`. **NEVER run 2+ browser-driving agents in parallel** (single shared browser). |
 | Read | cv.md, _profile.md, article-digest.md, cv-template.html |
-| Write | Temporary HTML for PDF, applications.md, reports .md |
-| Edit | Update tracker |
+| Write | Temporary HTML for PDF, reports .md, tracker-addition TSVs |
+| Edit | Update an existing tracker row's status or notes |
 | Canva MCP | Optional visual CV generation. Duplicate base design, edit text, export PDF. Requires `canva_resume_design_id` in profile.yml. |
 | Bash | `node generate-pdf.mjs` |
 

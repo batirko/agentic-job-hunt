@@ -1,6 +1,6 @@
 # Templates
 
-System-layer template files used by agentic-job-hunt scripts and modes. These files are auto-updated when you run `npm run update` -- put user customizations in the user-layer files instead (see DATA_CONTRACT.md).
+System-layer template files used by agentic-job-hunt scripts and modes. An upstream pull can change them, so put your customizations in the user-layer files instead (see DATA_CONTRACT.md).
 
 ## Files
 

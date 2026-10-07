@@ -8,7 +8,7 @@ batch/tracker-additions/**/*.tsv
 jds/*
 !jds/.gitkeep
 
-# User config and customization (never auto-updated)
+# Leftovers from the removed updater
 .update-dismissed
 .update-lock
 

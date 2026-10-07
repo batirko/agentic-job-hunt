@@ -16,8 +16,7 @@
  *   Unapplied sorts by LANE, then by POSTING FRESHNESS. Lane is the coarse
  *   priority bucket that drives the apply decision (see modes/_profile.md):
  *   4.0+ full effort, 3.5-3.9 light effort, below 3.5 do not apply. Inside a
- *   lane, priority carries no information — measured contact rate is 23% at
- *   4.0-4.4 and 25% at 4.5+, a difference of four applications — so ranking on
+ *   lane, contact rates barely differ between priority bands, so ranking on
  *   the second decimal sorts noise. What does decay is the posting: a role
  *   listed four days ago is a different bet from the same role at six weeks.
  *   Rows with no recorded posting date fall back to priority, so trackers

@@ -3,7 +3,7 @@ name: agentic-job-hunt
 description: AI job search command center -- evaluate offers, generate CVs, scan portals, track applications
 user_invocable: true
 args: mode
-argument-hint: "[scan | deep | pdf | oferta | ofertas | apply | batch | tracker | track | add | pipeline | contacto | training | project | update | postmortem]"
+argument-hint: "[scan | deep | pdf | oferta | ofertas | apply | batch | tracker | track | add | pipeline | contacto | training | project | patterns | followup | postmortem | prep | debrief | self-knowledge]"
 ---
 
 # agentic-job-hunt -- Claude Code entry point

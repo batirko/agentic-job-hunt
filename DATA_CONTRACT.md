@@ -1,10 +1,10 @@
 # Data Contract
 
-This document defines which files belong to the **system** (auto-updatable) and which belong to the **user** (never touched by updates).
+This document defines which files belong to the **system** and which belong to **you**. Keeping them apart is what lets you pull upstream changes (`git pull` from the template repo) without losing your work.
 
-## User Layer (NEVER auto-updated)
+## User Layer
 
-These files contain your personal data, customizations, and work product. Updates will NEVER modify them.
+These files contain your personal data, customizations, and work product. Upstream never changes them.
 
 | File | Purpose |
 |------|---------|
@@ -26,9 +26,9 @@ These files contain your personal data, customizations, and work product. Update
 | `output/*` | Your generated PDFs |
 | `jds/*` | Your saved job descriptions |
 
-## System Layer (safe to auto-update)
+## System Layer
 
-These files contain system logic, scripts, templates, and instructions that improve with each release.
+These files contain system logic, scripts, templates, and instructions. An upstream pull can change any of them, so don't put personal content here.
 
 | File | Purpose |
 |------|---------|
@@ -63,6 +63,6 @@ These files contain system logic, scripts, templates, and instructions that impr
 
 ## The Rule
 
-**If a file is in the User Layer, no update process may read, modify, or delete it.**
+**If a file is in the User Layer, upstream never ships a change to it.**
 
-**If a file is in the System Layer, it can be safely replaced with the latest version from the upstream repo.**
+**If a file is in the System Layer, an upstream pull can replace it.** Put your customizations, including your own standing rules for the agent, in `modes/_profile.md` or `config/profile.yml` instead.

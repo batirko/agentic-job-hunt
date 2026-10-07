@@ -79,7 +79,7 @@ Whenever a CV is generated in a session, the chat response announcing it **must 
 - **Single number** — the one figure to type when a form or a recruiter demands exactly one. Sit it near the top of the range, not in the middle.
 - **Range** — the band to say out loud when there is room for a conversation.
 
-Derive both per posting, never from a default. Inputs: the region's floor in `config/profile.yml` → `compensation.floors_by_region`, any band the posting itself publishes, and the employer's pay scale (funding, stage, global vs. local band). Name the floor you applied so the number is auditable. Full method and worked examples: `interview-prep/comp-expectations-2026-07.md`.
+Derive both per posting, never from a default. Inputs: the region's floor in `config/profile.yml` → `compensation.floors_by_region`, any band the posting itself publishes, and the employer's pay scale (funding, stage, global vs. local band). Name the floor you applied so the number is auditable.
 
 Three anchors that override the naive read:
 
@@ -434,11 +434,11 @@ can no longer answer follow-up questions about it.
 ## Tracker Management (MANDATORY)
 
 ### Mechanics live in AGENTS.md
-The two-file split, the 12-column schema, the status emojis, the sort order and
-the merge/archive/retire scripts are all specified in `AGENTS.md`. Do not
-restate them here — a second copy drifts, and the copy that used to live in this
-file had gone stale against `sort-tracker.mjs`. This section covers judgment
-only: which roles get effort, and how they are scored.
+The two-file split, the 12-column schema, the status emojis and the sort order
+are specified in `AGENTS.md`; the merge, archive, retire and sort rules are in
+each script's header. Don't restate them here, because a second copy drifts.
+This section covers judgment only: which roles get effort, and how they are
+scored.
 
 ### Adding New Roles
 1. Score using your archetypes from the Target Roles table above
@@ -459,9 +459,11 @@ only: which roles get effort, and how they are scored.
 | 3.5-3.9 | **Light effort** | Base CV, no cover letter, no comp research | _(not yet measured)_ |
 | < 3.5 | **Do not apply** | Nothing. Requires an explicit override, stated in the tracker notes | _(not yet measured)_ |
 
-**Default gate is 4.0.** Start strict. A gate is far easier to loosen once you
-can see what the lower lane actually returns than to tighten after months of
-volume. When your own data says otherwise, move it and write down why.
+**The apply gate is the floor of the light lane: 3.5 by default.** Below it,
+nothing gets produced without an override. Between 3.5 and 3.9 you apply with
+light effort; at 4.0 and above, full effort. When your own data says otherwise,
+move the boundaries and write down why. Change `LANES` in `sort-tracker.mjs` in
+the same edit, so the apply queue sorts on the same lanes this table defines.
 
 **Never generate a CV for a below-gate role without asking first.** State the
 score, state that it is below the gate, and wait.
@@ -494,7 +496,7 @@ Rules:
 - **A missed hard requirement caps Fit at 3.0.** Two or more caps it at 2.5. A hard requirement is one the posting states as a number, a credential, or a non-negotiable ("5+ years owning X", "fluent German", "must hold Y"). Transferable-experience language in the posting softens this to a −0.5 penalty instead of a cap.
 - Name every required line you are failing in the report, with the exact wording. A Fit score with no named gaps is not a score, it is an impression.
 
-**Why this changed.** Measured 2026-08-10: Fit averaged 3.97 across 174 applications with a standard deviation of 0.47, so nearly every evaluated role scored about 4. It had no spread, and once Odds was known it added no predictive value at all (within odds < 3.5, high-Fit roles did marginally *worse*). A score that reads 4.0 for everything is a constant. Scoring against the required list is what makes it a variable again.
+**Why Fit is scored this way.** Scored on impression, Fit drifts toward 4 for nearly every role you bother to evaluate. A score with no spread is a constant: once Odds is known it predicts nothing. Scoring against the required list is what makes it a variable. To check whether yours has spread, run `node analyze-scoring.mjs`.
 
 ### Salary Anchoring
 - Use previous negotiation data from the same company to inform salary expectations

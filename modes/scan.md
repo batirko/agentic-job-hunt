@@ -4,11 +4,12 @@ Scans configured job portals, filters by title relevance, and adds new offers to
 
 ## Recommended Execution
 
-Execute as a subagent to avoid consuming the main agent's context:
+Execute as a subagent to avoid consuming the main agent's context. In Claude Code:
 
 ```
-Task(
-    subagent_type="general",
+Agent(
+    subagent_type="general-purpose",
+    model="sonnet",
     description="Portal scan for [date]",
     prompt="[content of this file + specific data]"
 )

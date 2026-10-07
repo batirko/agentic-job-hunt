@@ -119,49 +119,6 @@ npm run sync-check
 
 ---
 
-## update:check
-
-Checks whether a newer version of agentic-job-hunt is available upstream. Outputs JSON to stdout:
-
-```bash
-```
-
-Possible JSON responses:
-
-| `status` | Meaning |
-|----------|---------|
-| `up-to-date` | Local version matches remote |
-| `update-available` | Newer version exists (includes `local`, `remote`, `changelog`) |
-| `dismissed` | User dismissed the update prompt |
-| `offline` | Could not reach GitHub |
-
-**Exit codes:** `0` always.
-
----
-
-## update
-
-Applies the upstream update. Creates a backup branch (`backup-pre-update-{version}`), fetches from the canonical repo, checks out only system-layer files, runs `npm install`, and commits. User-layer files (`cv.md`, `config/profile.yml`, `data/`, etc.) are never touched.
-
-```bash
-npm run update
-```
-
-**Exit codes:** `0` success, `1` lock conflict or safety violation.
-
----
-
-## rollback
-
-Restores system-layer files from the most recent backup branch created during an update.
-
-```bash
-```
-
-**Exit codes:** `0` success, `1` no backup branch found or git error.
-
----
-
 ## liveness
 
 Tests whether job posting URLs are still live using headless Chromium. Detects expired patterns (e.g. "job no longer available"), HTTP 404/410, ATS redirect patterns, and apply-button presence. Supports multi-language expired patterns (English, German, French).
